@@ -1,6 +1,6 @@
 # Building a CSV to JSON Tool in Python
 
-This tutorial guides you through building a small command-line tool that reads a CSV file and writes a JSON file. It intentionally does not give you the complete final program. The goal is to help you understand the shape of the solution, spot common traps, and practice using documentation or a coding assistant responsibly.
+This tutorial guides you through building a small command-line tool that reads a CSV file and writes a JSON file. It intentionally does not give you the complete final program. The goal is to help you understand the shape of the solution, spot common traps, and practice implementing the missing pieces from a clear outline.
 
 You will use Python's standard library for the actual conversion and `uv` for project setup and running commands.
 
@@ -103,7 +103,22 @@ This structure gives you clear places to test and debug. If your program fails, 
 
 ## Reading CSV
 
-Look up `csv.DictReader` in the Python documentation. The important idea is that it uses the first CSV row as keys.
+Use `csv.DictReader` to read the CSV. `DictReader` treats the first row as column names. Each later row becomes a dictionary where the keys are those column names and the values are the row's cell values.
+
+For example, this CSV:
+
+```csv
+name,language
+Ada,Python
+Linus,C
+```
+
+becomes dictionaries shaped like this:
+
+```python
+{"name": "Ada", "language": "Python"}
+{"name": "Linus", "language": "C"}
+```
 
 A partial example:
 
@@ -115,7 +130,14 @@ with input_path.open("r", encoding="utf-8", newline="") as csv_file:
     records = list(reader)
 ```
 
-The `newline=""` part looks odd, but it is recommended when using Python's `csv` module. Without it, some platforms can handle line endings strangely.
+The `newline=""` argument is recommended when using Python's `csv` module. It lets the CSV module handle line endings consistently across platforms.
+
+Useful `DictReader` behavior to know:
+
+- `reader.fieldnames` contains the column names after the reader has started reading.
+- Values are read as strings, not as integers, floats, or booleans.
+- If a row has fewer values than the header row, the missing columns get `None`.
+- If a row has more values than the header row, the extra values are stored under a special key unless you configure `restkey`.
 
 ## Writing JSON
 
@@ -129,6 +151,14 @@ with output_path.open("w", encoding="utf-8") as json_file:
 ```
 
 The `indent=2` option makes the output easier for humans to read. For very large files, pretty JSON creates a larger output file, so compact JSON may be better.
+
+Useful `json.dump` behavior to know:
+
+- It writes a Python value directly to an open file.
+- Lists become JSON arrays.
+- Dictionaries become JSON objects.
+- Strings, numbers, booleans, and `None` become their JSON equivalents.
+- `indent=2` adds line breaks and spaces for readable output.
 
 ## Command-Line Arguments
 
@@ -144,6 +174,8 @@ args = parser.parse_args()
 ```
 
 Then convert those strings into `Path` objects before passing them to your functions.
+
+In this example, `add_argument("input_csv")` creates a required positional argument. The first path after the script name becomes `args.input_csv`, and the second becomes `args.output_json`.
 
 ## Footguns And Edge Cases
 

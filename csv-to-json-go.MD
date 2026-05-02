@@ -93,7 +93,9 @@ Returning errors instead of exiting inside helper functions makes the code easie
 
 ## Reading CSV
 
-Look up `encoding/csv.Reader` in the Go documentation. You will usually read the first row separately as headers:
+Use `encoding/csv.Reader` to read CSV rows. A reader returns one row at a time as a `[]string`. Each string in the slice is one field from the row.
+
+You will usually read the first row separately as headers:
 
 ```go
 reader := csv.NewReader(file)
@@ -103,6 +105,8 @@ if err != nil {
 	return nil, err
 }
 ```
+
+`csv.NewReader(file)` creates a CSV reader around an open file. `reader.Read()` reads the next CSV row. The first call gives you the headers, and later calls give you data rows.
 
 Then each later row can be matched with the headers:
 
@@ -114,7 +118,14 @@ for i, header := range headers {
 }
 ```
 
-That loop is only safe if you have already checked that the row has enough columns. Real CSV files are often messier than classroom examples.
+That loop is only safe if you have already checked that the row has enough columns. CSV input can contain rows with missing fields, extra fields, quoted commas, or other cases that should be handled deliberately.
+
+Useful `encoding/csv.Reader` behavior to know:
+
+- Quoted commas are handled for you, so `"Smith, Jack"` stays one field.
+- Escaped quotes are handled for you, so `"John ""Johnny"" Doe"` becomes `John "Johnny" Doe`.
+- `Read()` returns `io.EOF` when there are no more rows.
+- By default, the reader expects rows to have a consistent number of fields unless you adjust `FieldsPerRecord`.
 
 ## Writing JSON
 
@@ -127,6 +138,13 @@ err := encoder.Encode(records)
 ```
 
 `SetIndent` makes the output easier to inspect while learning. If the output might become huge, compact JSON may be better.
+
+Useful `encoding/json` behavior to know:
+
+- `json.NewEncoder(file)` creates an encoder that writes JSON to an open file.
+- `Encode(records)` writes the value and adds a trailing newline.
+- A `[]map[string]string` becomes a JSON array of objects.
+- `SetIndent("", "  ")` configures readable output with two spaces per level.
 
 ## Command-Line Arguments
 
@@ -176,4 +194,4 @@ After the basic version works, try adding one improvement at a time:
 - Add tests for empty files and uneven rows.
 - Convert selected columns from strings to numbers.
 
-Keep each improvement small. Go rewards clear control flow, so prefer simple functions and explicit error handling over clever shortcuts.
+Keep each improvement small. Go rewards clear control flow, so prefer simple functions and explicit error handling over compressed or overly abstract code.
